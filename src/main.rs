@@ -41,7 +41,7 @@ type DepositBlob = Vec<u8>;
 
 struct Runtime<'a> {
     ticks_left: u32,
-    pub memory: Option<MemoryRef>,
+    memory: Option<MemoryRef>,
     pre_state: &'a Bytes32,
     block_data: &'a ShardBlockBody,
     post_state: Bytes32,
@@ -741,13 +741,16 @@ fn process_yaml_test(filename: &str) {
     }
 }
 
-fn main() {
-    env_logger::init();
+#[macro_use]
+extern crate criterion;
 
-    let args: Vec<String> = env::args().collect();
-    process_yaml_test(if args.len() != 2 {
-        "test.yaml"
-    } else {
-        &args[1]
-    });
+use criterion::black_box;
+use criterion::Criterion;
+
+fn criterion_benchmark(c: &mut Criterion) {
+    env_logger::init();
+    c.bench_function("test", |b| b.iter(|| process_yaml_test("bazaar.yaml")));
 }
+
+criterion_group!(benches, criterion_benchmark);
+criterion_main!(benches);
