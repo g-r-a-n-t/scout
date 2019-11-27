@@ -41,7 +41,7 @@ type DepositBlob = Vec<u8>;
 
 struct Runtime<'a> {
     ticks_left: u32,
-    memory: Option<MemoryRef>,
+    memory: MemoryRef,
     pre_state: &'a Bytes32,
     block_data: &'a ShardBlockBody,
     post_state: Bytes32,
@@ -56,7 +56,7 @@ impl<'a> Runtime<'a> {
     ) -> Runtime<'a> {
         Runtime {
             ticks_left: 10_000_000, // FIXME: make this configurable
-            memory: Some(memory),
+            memory: memory,
             pre_state: pre_state,
             block_data: block_data,
             post_state: Bytes32::default(),
@@ -95,8 +95,7 @@ impl<'a> Externals for Runtime<'a> {
                 info!("loadprestateroot to {}", ptr);
 
                 // TODO: add checks for out of bounds access
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .set(ptr, &self.pre_state.bytes)
                     .expect("expects writing to memory to succeed");
 
@@ -107,8 +106,7 @@ impl<'a> Externals for Runtime<'a> {
                 info!("savepoststateroot from {}", ptr);
 
                 // TODO: add checks for out of bounds access
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .get_into(ptr, &mut self.post_state.bytes)
                     .expect("expects reading from memory to succeed");
 
@@ -133,8 +131,7 @@ impl<'a> Externals for Runtime<'a> {
                 let length = length as usize;
 
                 // TODO: add checks for out of bounds access
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .set(ptr, &self.block_data.data[offset..length])
                     .expect("expects writing to memory to succeed");
 
@@ -170,8 +167,7 @@ impl<'a> Externals for Runtime<'a> {
                 let mut buf = Vec::with_capacity(length as usize);
                 unsafe { buf.set_len(length as usize) };
                 // TODO: add checks for out of bounds access
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .get_into(ptr, &mut buf)
                     .expect("expects reading from memory to succeed");
                 debug!("print: {}", String::from_utf8_lossy(&buf));
@@ -183,8 +179,7 @@ impl<'a> Externals for Runtime<'a> {
                 let mut buf = Vec::with_capacity(length as usize);
                 unsafe { buf.set_len(length as usize) };
                 // TODO: add checks for out of bounds access
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .get_into(ptr, &mut buf)
                     .expect("expects reading from memory to succeed");
                 debug!("print.hex: {}", buf.to_hex());
@@ -199,11 +194,10 @@ impl<'a> Externals for Runtime<'a> {
                 let mut b_raw = [0u8; 32];
                 let mut c_raw = [0u8; 32];
 
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .get_into(a_ptr, &mut a_raw)
                     .expect("expects reading from memory to succeed");
-                memory
+                self.memory
                     .get_into(b_ptr, &mut b_raw)
                     .expect("expects reading from memory to succeed");
 
@@ -212,7 +206,7 @@ impl<'a> Externals for Runtime<'a> {
                 let c = a.checked_add(b).expect("expects non-overflowing addition");
                 c.to_big_endian(&mut c_raw);
 
-                memory
+                self.memory
                     .set(c_ptr, &c_raw)
                     .expect("expects writing to memory to succeed");
 
@@ -227,11 +221,10 @@ impl<'a> Externals for Runtime<'a> {
                 let mut b_raw = [0u8; 32];
                 let mut c_raw = [0u8; 32];
 
-                let memory = self.memory.as_ref().expect("expects memory object");
-                memory
+                self.memory
                     .get_into(a_ptr, &mut a_raw)
                     .expect("expects reading from memory to succeed");
-                memory
+                self.memory
                     .get_into(b_ptr, &mut b_raw)
                     .expect("expects reading from memory to succeed");
 
@@ -242,7 +235,7 @@ impl<'a> Externals for Runtime<'a> {
                     .expect("expects non-overflowing subtraction");
                 c.to_big_endian(&mut c_raw);
 
-                memory
+                self.memory
                     .set(c_ptr, &c_raw)
                     .expect("expects writing to memory to succeed");
 
