@@ -50,11 +50,7 @@ struct Runtime<'a> {
 }
 
 impl<'a> Runtime<'a> {
-    fn new(
-        code: &'a [u8],
-        pre_state: &'a Bytes32,
-        block_data: &'a ShardBlockBody,
-    ) -> Runtime<'a> {
+    fn new(code: &'a [u8], pre_state: &'a Bytes32, block_data: &'a ShardBlockBody) -> Runtime<'a> {
         Runtime {
             code: code,
             ticks_left: 10_000_000, // FIXME: make this configurable
@@ -67,31 +63,31 @@ impl<'a> Runtime<'a> {
     }
 
     fn execute(&mut self) -> Result<(), Box<dyn Error>> {
-    let module = Module::from_buffer(&self.code)?;
-    let mut imports = ImportsBuilder::new();
-    // TODO: remove this and rely on Eth2ImportResolver and DebugImportResolver
-    imports.push_resolver("env", &RuntimeModuleImportResolver);
-    imports.push_resolver("eth2", &Eth2ImportResolver);
-    imports.push_resolver("bignum", &BignumImportResolver);
-    imports.push_resolver("debug", &DebugImportResolver);
+        let module = Module::from_buffer(&self.code)?;
+        let mut imports = ImportsBuilder::new();
+        // TODO: remove this and rely on Eth2ImportResolver and DebugImportResolver
+        imports.push_resolver("env", &RuntimeModuleImportResolver);
+        imports.push_resolver("eth2", &Eth2ImportResolver);
+        imports.push_resolver("bignum", &BignumImportResolver);
+        imports.push_resolver("debug", &DebugImportResolver);
 
-    let instance = ModuleInstance::new(&module, &imports)?.run_start(&mut NopExternals)?;
+        let instance = ModuleInstance::new(&module, &imports)?.run_start(&mut NopExternals)?;
 
-    // FIXME: pass through errors here and not use .expect()
-    let internal_mem = instance
-        .export_by_name("memory")
-        .expect("Module expected to have 'memory' export")
-        .as_memory()
-        .cloned()
-        .expect("'memory' export should be a memory");
+        // FIXME: pass through errors here and not use .expect()
+        let internal_mem = instance
+            .export_by_name("memory")
+            .expect("Module expected to have 'memory' export")
+            .as_memory()
+            .cloned()
+            .expect("'memory' export should be a memory");
 
-      self.memory = Some(internal_mem);
+        self.memory = Some(internal_mem);
 
-    let result = instance.invoke_export("main", &[], self)?;
+        let result = instance.invoke_export("main", &[], self)?;
 
-    info!("Result: {:?}", result);
-    
-    Ok(())
+        info!("Result: {:?}", result);
+
+        Ok(())
     }
 
     fn get_post_state(&self) -> Bytes32 {
