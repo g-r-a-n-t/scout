@@ -62,7 +62,7 @@ impl<'a> Runtime<'a> {
         }
     }
 
-    fn execute(&mut self) -> Result<(), Box<dyn Error>> {
+    fn execute(&mut self) -> Result<(Bytes32, Vec<DepositBlob>), Box<dyn Error>> {
         let module = Module::from_buffer(&self.code)?;
         let mut imports = ImportsBuilder::new();
         // TODO: remove this and rely on Eth2ImportResolver and DebugImportResolver
@@ -87,16 +87,8 @@ impl<'a> Runtime<'a> {
 
         info!("Result: {:?}", result);
 
-        Ok(())
-    }
-
-    fn get_post_state(&self) -> Bytes32 {
-        self.post_state
-    }
-
-    fn get_deposits(&self) -> Vec<DepositBlob> {
         // TODO: avoid cloning here
-        self.deposits.clone()
+        Ok((self.post_state, self.deposits.clone()))
     }
 }
 
@@ -597,12 +589,7 @@ pub fn execute_code(
     );
 
     let mut runtime = Runtime::new(&code, pre_state, block_data);
-
-    runtime.execute()?;
-
-    info!("Execution finished");
-
-    Ok((runtime.get_post_state(), runtime.get_deposits()))
+    runtime.execute()
 }
 
 pub fn process_shard_block(
